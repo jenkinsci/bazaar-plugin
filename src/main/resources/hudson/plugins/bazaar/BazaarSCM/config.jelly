@@ -1,0 +1,10 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:entry title="${%Repository URL}" help="/plugin/bazaar/help.html">
+    <f:textbox field="source" />
+  </f:entry>
+  <f:advanced>
+    <f:entry title="${%Clean Build}" help="/plugin/bazaar/clean.html">
+      <f:checkbox name="bzr.clean" checked="${instance.clean}" />
+    </f:entry>
+  </f:advanced>
+</j:jelly>
