@@ -12,5 +12,5 @@
   <packaging>hpi</packaging>
   <name>Hudson Bazaar plugin</name>
   <description>Integrates Hudson to Bazaar SCM</description>
-  <url>http://hudson.gotdns.com/wiki/display/HUDSON/Mercurial+Plugin</url>
+  <url>http://hudson.gotdns.com/wiki/display/HUDSON/Bazaar+Plugin</url>
 </project>
