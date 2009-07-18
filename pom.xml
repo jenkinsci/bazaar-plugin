@@ -8,9 +8,15 @@
   </parent>
 
   <artifactId>bazaar</artifactId>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
   <packaging>hpi</packaging>
   <name>Hudson Bazaar plugin</name>
   <description>Integrates Hudson to Bazaar SCM</description>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Bazaar+Plugin</url>
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/bazaar-0.1</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/bazaar-0.1</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/bazaar/tags/bazaar-0.1</url>
+  </scm>
 </project>
