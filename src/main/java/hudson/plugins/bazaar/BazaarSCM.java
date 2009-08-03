@@ -81,7 +81,7 @@ public class BazaarSCM extends SCM implements Serializable {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             if ((ret = launcher.launch(new String[]{getDescriptor().getBzrExe(), "revno", root},
                     EnvVars.masterEnvVars, baos, workspace).join()) != 0) {
-                logger.warning("bzr revno " + root + " returned " + ret);
+                logger.warning("bzr revno " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
             } else {
                 Pattern pattern = Pattern.compile(".*(\\d+)$");
                 Matcher m = pattern.matcher(baos.toString());
@@ -163,6 +163,11 @@ public class BazaarSCM extends SCM implements Serializable {
         output.println("Getting upstream revision number..");
         int upstream = getRevno(launcher, workspace, source);
         output.println(upstream);
+
+        if (upstream == -1) {
+           output.println("Upstream returned -1 as the version number.. Ignoring");
+           return false;
+        }
 
         output.println("Getting local revision number..");
         int local = getRevno(launcher, workspace, workspace.getRemote());
