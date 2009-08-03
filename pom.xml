@@ -8,7 +8,7 @@
   </parent>
 
   <artifactId>bazaar</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Hudson Bazaar plugin</name>
   <description>Integrates Hudson to Bazaar SCM</description>
