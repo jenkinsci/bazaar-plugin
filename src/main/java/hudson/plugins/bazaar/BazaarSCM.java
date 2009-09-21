@@ -1,10 +1,10 @@
 package hudson.plugins.bazaar;
 
 import hudson.EnvVars;
+import hudson.Extension;
 import hudson.FilePath.FileCallable;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -15,8 +15,7 @@ import hudson.scm.ChangeLogParser;
 import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.ByteBuffer;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -35,8 +34,9 @@ import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 /**
  * Bazaar SCM.
@@ -79,8 +79,8 @@ public class BazaarSCM extends SCM implements Serializable {
         try {
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if ((ret = launcher.launch(new String[]{getDescriptor().getBzrExe(), "revno", root},
-                    EnvVars.masterEnvVars, baos, workspace).join()) != 0) {
+            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "revno", root)
+                    .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
                 logger.warning("bzr revno " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
             } else {
                 Pattern pattern = Pattern.compile(".*(\\d+)$");
@@ -107,8 +107,8 @@ public class BazaarSCM extends SCM implements Serializable {
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-            if ((ret = launcher.launch(new String[]{getDescriptor().getBzrExe(), "log", "--show-ids", "-r", "-1"},
-                    EnvVars.masterEnvVars, baos, workspace).join()) != 0) {
+            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "log", "--show-ids", "-r", "-1")
+                    .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
                 logger.warning("Failed to execute bzr log: " + ret);
             } else {
                 BufferedReader in = new BufferedReader(new StringReader(baos.toString()));
@@ -140,8 +140,8 @@ public class BazaarSCM extends SCM implements Serializable {
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             String version = "revid:" + oldver + "..revid:" + newver;
-            if ((ret = launcher.launch(new String[]{getDescriptor().getBzrExe(), "log", "-v", "-r", version, "--long", "--show-ids"},
-                    EnvVars.masterEnvVars, baos, workspace).join()) != 0) {
+            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "log", "-v", "-r", version, "--long", "--show-ids")
+                    .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
                 logger.warning("bzr log -v -r returned " + ret);
             } else {
                 FileOutputStream fos = new FileOutputStream(changeLog);
@@ -202,8 +202,8 @@ public class BazaarSCM extends SCM implements Serializable {
         try {
             String oldid = getRevid(launcher, workspace);
 
-            if (launcher.launch(new String[]{getDescriptor().getBzrExe(), "pull", "--overwrite"},
-                    build.getEnvVars(), listener.getLogger(), workspace).join() != 0) {
+            if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite")
+                    .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
                 listener.error("Failed to pull");
                 return false;
             }
@@ -234,7 +234,7 @@ public class BazaarSCM extends SCM implements Serializable {
         args.add(getDescriptor().getBzrExe(), "branch");
         args.add(source, workspace.getRemote());
         try {
-            if (launcher.launch(args.toCommandArray(), build.getEnvVars(), listener.getLogger(), null).join() != 0) {
+            if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).join() != 0) {
                 listener.error("Failed to clone " + source);
                 return false;
             }
@@ -261,7 +261,7 @@ public class BazaarSCM extends SCM implements Serializable {
     }
 
     public static final class DescriptorImpl extends SCMDescriptor<BazaarSCM> {
-
+        @Extension
         public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
         private String bzrExe;
         private transient String version;
@@ -290,35 +290,32 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         @Override
-        public boolean configure(StaplerRequest req) throws FormException {
+        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             bzrExe = req.getParameter("bazaar.bzrExe");
             version = null;
             save();
             return true;
         }
 
-        public void doBzrExeCheck(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
-            new FormFieldValidator.Executable(req,rsp) {
-                @Override
-                protected void checkExecutable(File exe) throws IOException, ServletException {
+        public FormValidation doBzrExeCheck(@QueryParameter final String value) throws IOException, ServletException {
+            return FormValidation.validateExecutable(value, new FormValidation.FileValidator() {
+                @Override public FormValidation validate(File exe) {
                     try {
                        ByteBuffer baos = new ByteBuffer();
-                       Proc proc = Hudson.getInstance().createLauncher(TaskListener.NULL).launch(new String[] {getBzrExe(), "--version"}, new String[0], baos, null);
-                       if (proc.join() == 0) {
-                          ok();
-                          return;
+                       if (Hudson.getInstance().createLauncher(TaskListener.NULL).launch()
+                               .cmds(getBzrExe(), "--version").stdout(baos).join() == 0) {
+                          return FormValidation.ok();
                        } else {
-                          warning("Could not locate the executable in path");
-                          return;
+                          return FormValidation.warning("Could not locate the executable in path");
                        }
                     } catch (IOException e) {
                         // failed
                     } catch (InterruptedException e) {
                         // failed
                     }
-                    error("Unable to check bazaar version");
+                    return FormValidation.error("Unable to check bazaar version");
                 }
-            }.process();
+            });
         }
 
         /**
