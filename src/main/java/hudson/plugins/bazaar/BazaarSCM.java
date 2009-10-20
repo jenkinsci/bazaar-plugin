@@ -202,7 +202,7 @@ public class BazaarSCM extends SCM implements Serializable {
         try {
             String oldid = getRevid(launcher, workspace);
 
-            if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite")
+            if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite", source)
                     .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
                 listener.error("Failed to pull");
                 return false;
