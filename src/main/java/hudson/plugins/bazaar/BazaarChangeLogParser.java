@@ -80,13 +80,15 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     break;
                 case 4:
                     if (!(ident == nident && s.startsWith("message:"))) {
-                        if (ident == nident && (s.startsWith("modified:") || s.startsWith("added:") || s.startsWith("removed:"))) {
+                        if (ident == nident && (s.startsWith("modified:") || s.startsWith("added:") || s.startsWith("removed:") || s.startsWith("renamed:"))) {
                             if (s.startsWith("modified")) {
                                 state = 5;
                             } else if (s.startsWith("added:")) {
                                 state = 6;
                             } else if (s.startsWith("removed:")) {
                                 state = 7;
+                            } else if (s.startsWith("renamed:")){
+                            	state = 8;
                             }
                             entry.setMsg(message.toString());
                             message.setLength(0);
@@ -96,52 +98,60 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                         }
                     }
                     break;
-                case 5:
+                case 5: // modified
                     if (s.startsWith("modified")) {
                         state = 5;
                     } else if (s.startsWith("added:")) {
                         state = 6;
                     } else if (s.startsWith("removed:")) {
                         state = 7;
+                    } else if (s.startsWith("renamed:")){
+                    	state = 8;
                     } else {
-                        int idx = s.indexOf(" => ");
-                        if (idx != -1) {
-                            s = s.substring(idx + 4);
-                        }
                         entry.getModifiedPaths().add(s);
 
                     }
 
                     break;
-                case 6:
+                case 6: // added
                     if (s.startsWith("modified")) {
                         state = 5;
                     } else if (s.startsWith("added:")) {
                         state = 6;
                     } else if (s.startsWith("removed:")) {
                         state = 7;
+                    } else if (s.startsWith("renamed:")){
+                    	state = 8;
                     } else {
-                        int idx = s.indexOf(" => ");
-                        if (idx != -1) {
-                            s = s.substring(idx + 4);
-                        }
                         entry.getAddedPaths().add(s);
                     }
 
                     break;
-                case 7:
+                case 7: // removed
                     if (s.startsWith("modified")) {
                         state = 5;
                     } else if (s.startsWith("added:")) {
                         state = 6;
                     } else if (s.startsWith("removed:")) {
                         state = 7;
+                    } else if (s.startsWith("renamed:")){
+                    	state = 8;
                     } else {
-                        int idx = s.indexOf(" => ");
-                        if (idx != -1) {
-                            s = s.substring(idx + 4);
-                        }
                         entry.getDeletedPaths().add(s);
+                    }
+
+                    break;
+                case 8: // renamed
+                    if (s.startsWith("modified")) {
+                        state = 5;
+                    } else if (s.startsWith("added:")) {
+                        state = 6;
+                    } else if (s.startsWith("removed:")) {
+                        state = 7;
+                    } else if (s.startsWith("renamed:")){
+                    	state = 8;
+                    } else {
+                        entry.getModifiedPaths().add(s);
                     }
 
                     break;
