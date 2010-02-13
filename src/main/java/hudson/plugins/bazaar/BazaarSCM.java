@@ -101,26 +101,17 @@ public class BazaarSCM extends SCM implements Serializable {
         return rev;
     }
 
-    private String getRevid(Launcher launcher, FilePath workspace) throws InterruptedException {
+    private String getRevid(Launcher launcher, FilePath workspace, String root) throws InterruptedException {
         String rev = null;
         try {
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "log", "--show-ids", "-r", "-1")
+            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "revision-info", "-d", root)
                     .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
-                logger.warning("Failed to execute bzr log: " + ret);
+                logger.warning("bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
             } else {
-                BufferedReader in = new BufferedReader(new StringReader(baos.toString()));
-                String line;
-                while ((line = in.readLine()) != null) {
-                    if (line.startsWith("revision-id: ")) {
-                        rev = line.substring(13).trim();
-                        logger.fine("Got revision id: {" + rev + "}");
-                        break;
-                    }
-                }
-                in.close();
+              String[] infos = baos.toString().split(" ");
+              rev = infos[1];
             }
         } catch (IOException e) {
             StringWriter w = new StringWriter();
@@ -160,20 +151,15 @@ public class BazaarSCM extends SCM implements Serializable {
 
         PrintStream output = listener.getLogger();
 
-        output.println("Getting upstream revision number..");
-        int upstream = getRevno(launcher, workspace, source);
+        output.println("Getting upstream revision...");
+        String upstream = getRevid(launcher, workspace, source);
         output.println(upstream);
 
-        if (upstream == -1) {
-           output.println("Upstream returned -1 as the version number.. Ignoring");
-           return false;
-        }
-
-        output.println("Getting local revision number..");
-        int local = getRevno(launcher, workspace, workspace.getRemote());
+        output.println("Getting local revision...");
+        String local = getRevid(launcher, workspace, workspace.getRemote());
         output.println(local);
 
-        return upstream != local;
+        return ! upstream.equals(local);
     }
 
     @Override
@@ -200,7 +186,7 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     private boolean update(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
         try {
-            String oldid = getRevid(launcher, workspace);
+            String oldid = getRevid(launcher, workspace, source);
 
             if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite", source)
                     .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
@@ -208,7 +194,7 @@ public class BazaarSCM extends SCM implements Serializable {
                 return false;
             }
 
-            String newid = getRevid(launcher, workspace);
+            String newid = getRevid(launcher, workspace, source);
             getLog(launcher, workspace, oldid, newid, changelogFile);
 
         } catch (IOException e) {
