@@ -13,4 +13,16 @@
   <name>Hudson Bazaar plugin</name>
   <description>Integrates Hudson to Bazaar SCM</description>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Bazaar+Plugin</url>
+
+  <developers>
+    <developer>
+      <id>trondn</id>
+      <name>Trond Norbye</name>
+    </developer>
+    <developer>
+      <id>sdirector</id>
+      <name>Monty Taylor</name>
+      <email>mordred@inaugust.com</email>
+    </developer>
+  </developers>
 </project>
