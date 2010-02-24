@@ -74,33 +74,6 @@ public class BazaarSCM extends SCM implements Serializable {
         return clean;
     }
 
-    private int getRevno(Launcher launcher, FilePath workspace, String root) throws InterruptedException {
-        int rev = -1;
-        try {
-            int ret;
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "revno", root)
-                    .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
-                logger.warning("bzr revno " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
-            } else {
-                Pattern pattern = Pattern.compile(".*(\\d+)$");
-                Matcher m = pattern.matcher(baos.toString());
-                if (m.find()) {
-                    String up = baos.toString().substring(m.start(), m.end());
-                    rev = Integer.parseInt(up);
-                } else {
-                    logger.warning("Unparsable output returned from bzr revno: \"" + baos.toString() + "\"");
-                }
-            }
-        } catch (IOException e) {
-            StringWriter w = new StringWriter();
-            e.printStackTrace(new PrintWriter(w));
-            logger.log(Level.WARNING, "Failed to poll repository: ", e);
-        }
-
-        return rev;
-    }
-
     private String getRevid(Launcher launcher, FilePath workspace, String root) throws InterruptedException {
         String rev = null;
         try {
@@ -110,7 +83,7 @@ public class BazaarSCM extends SCM implements Serializable {
                     .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
                 logger.warning("bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
             } else {
-              String[] infos = baos.toString().split(" ");
+              String[] infos = baos.toString().split("\\s");
               rev = infos[1];
             }
         } catch (IOException e) {
@@ -186,7 +159,7 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     private boolean update(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
         try {
-            String oldid = getRevid(launcher, workspace, source);
+            String oldid = getRevid(launcher, workspace, workspace.getRemote());
 
             if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite", source)
                     .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
@@ -194,7 +167,7 @@ public class BazaarSCM extends SCM implements Serializable {
                 return false;
             }
 
-            String newid = getRevid(launcher, workspace, source);
+            String newid = getRevid(launcher, workspace, workspace.getRemote());
             getLog(launcher, workspace, oldid, newid, changelogFile);
 
         } catch (IOException e) {
