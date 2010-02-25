@@ -37,6 +37,9 @@ public class BazaarChangeLogParser extends ChangeLogParser {
             s = s.trim();
             if ("------------------------------------------------------------".equals(s)) {
                 if (entry != null && state > 2) {
+                    if (message.length() != 0) {
+                        entry.setMsg(message.toString());
+                    }
                     entries.add(entry);
                 }
                 entry = new BazaarChangeSet();
@@ -88,7 +91,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                             } else if (s.startsWith("removed:")) {
                                 state = 7;
                             } else if (s.startsWith("renamed:")){
-                            	state = 8;
+                                state = 8;
                             }
                             entry.setMsg(message.toString());
                             message.setLength(0);
@@ -106,7 +109,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("removed:")) {
                         state = 7;
                     } else if (s.startsWith("renamed:")){
-                    	state = 8;
+                        state = 8;
                     } else {
                         entry.getModifiedPaths().add(s);
 
@@ -121,7 +124,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("removed:")) {
                         state = 7;
                     } else if (s.startsWith("renamed:")){
-                    	state = 8;
+                        state = 8;
                     } else {
                         entry.getAddedPaths().add(s);
                     }
@@ -135,7 +138,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("removed:")) {
                         state = 7;
                     } else if (s.startsWith("renamed:")){
-                    	state = 8;
+                        state = 8;
                     } else {
                         entry.getDeletedPaths().add(s);
                     }
@@ -149,7 +152,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("removed:")) {
                         state = 7;
                     } else if (s.startsWith("renamed:")){
-                    	state = 8;
+                        state = 8;
                     } else {
                         entry.getModifiedPaths().add(s);
                     }
@@ -164,6 +167,9 @@ public class BazaarChangeLogParser extends ChangeLogParser {
         }
 
         if (entry != null && state > 2) {
+            if (message.length() != 0) {
+                entry.setMsg(message.toString());
+            }
             entries.add(entry);
         }
 
