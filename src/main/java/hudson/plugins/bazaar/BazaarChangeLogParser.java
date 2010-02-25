@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -18,7 +19,7 @@ import java.util.logging.Logger;
 public class BazaarChangeLogParser extends ChangeLogParser {
 
     public BazaarChangeSetList parse(AbstractBuild build, File changelogFile) throws IOException {
-        ArrayList<BazaarChangeSet> entries = new ArrayList<BazaarChangeSet>();
+        List<BazaarChangeSet> entries = new ArrayList<BazaarChangeSet>();
 
         BufferedReader in = new BufferedReader(new FileReader(changelogFile));
         StringBuilder message = new StringBuilder();
@@ -172,6 +173,9 @@ public class BazaarChangeLogParser extends ChangeLogParser {
             }
             entries.add(entry);
         }
+
+        // Remove current revision entry
+        entries = entries.subList(0, Math.max(0 ,entries.size() -1));
 
         return new BazaarChangeSetList(build, entries);
     }
