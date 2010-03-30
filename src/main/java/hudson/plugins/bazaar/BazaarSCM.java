@@ -5,6 +5,8 @@ import hudson.Extension;
 import hudson.FilePath.FileCallable;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Launcher.LocalLauncher;
+import hudson.Launcher.ProcStarter;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -12,8 +14,11 @@ import hudson.model.Hudson;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.ChangeLogParser;
+import hudson.scm.PollingResult;
+import hudson.scm.PollingResult.Change;
 import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
+import hudson.scm.SCMRevisionState;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import java.io.BufferedReader;
@@ -74,13 +79,23 @@ public class BazaarSCM extends SCM implements Serializable {
         return clean;
     }
 
-    private String getRevid(Launcher launcher, FilePath workspace, String root) throws InterruptedException {
+    private String getRevid(Launcher launcher, FilePath workspace,
+            TaskListener listener, String root) throws InterruptedException {
         String rev = null;
         try {
+            if (launcher == null) {
+                /* Running for a VM or whathaveyou: make a launcher on master */
+                launcher = new LocalLauncher(listener);
+            }
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "revision-info", "-d", root)
-                    .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
+            final String bzr_cmd = getDescriptor().getBzrExe();
+            ProcStarter starter = launcher.launch();
+            starter = starter.cmds(bzr_cmd, "revision-info", "-d", root);
+            starter = starter.envs(EnvVars.masterEnvVars);
+            starter = starter.stdout(baos);
+            // not needed with -d starter = starter.pwd(workspace);
+            if ((ret = starter.join()) != 0) {
                 logger.warning("bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + baos.toString() + "\"");
             } else {
               String[] infos = baos.toString().split("\\s");
@@ -93,7 +108,7 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         if (rev == null) {
-            logger.warning("Failed to get revision id for: " + workspace);
+            logger.warning("Failed to get revision id for: " + root);
         }
 
         return rev;
@@ -120,16 +135,57 @@ public class BazaarSCM extends SCM implements Serializable {
     }
 
     @Override
-    public boolean pollChanges(AbstractProject project, Launcher launcher, FilePath workspace, TaskListener listener) throws IOException, InterruptedException {
+    protected PollingResult compareRemoteRevisionWith(
+            AbstractProject<?, ?> project, Launcher launcher, FilePath workspace,
+            TaskListener listener, SCMRevisionState baseline) throws
+            IOException, InterruptedException {
+        PrintStream output = listener.getLogger();
+        output.printf("Getting current remote revision...");
+        String upstream = getRevid(launcher, workspace, listener, source);
+        output.println(upstream);
+        final BazaarRevisionState remote = new BazaarRevisionState(upstream);
+        final Change change;
+        if ((baseline == SCMRevisionState.NONE)
+            // appears that other instances of None occur - its not a singleton.
+            // so do a (fugly) class check.
+            || (baseline.getClass() != BazaarRevisionState.class)
+            || (!remote.rev_id.equals(((BazaarRevisionState)baseline).rev_id)))
+            change = Change.SIGNIFICANT;
+        else
+            change = Change.NONE;
+        return new PollingResult(baseline,remote,change);
+    }
+
+    @Override
+    public boolean requiresWorkspaceForPolling() {
+        return false;
+    }
+
+    @Override
+    public SCMRevisionState calcRevisionsFromBuild(AbstractBuild<?, ?> build,
+            Launcher launcher, TaskListener listener) throws IOException,
+            InterruptedException {
+        PrintStream output = listener.getLogger();
+        output.println("Getting local revision...");
+        String local = getRevid(launcher, build.getWorkspace(), listener, build.getWorkspace().getRemote());
+        output.println(local);
+        return new BazaarRevisionState(local);
+    }
+
+    /** for old hudsons - delete at will **/
+    @Override
+    public boolean pollChanges(AbstractProject project, Launcher launcher,
+            FilePath workspace, TaskListener listener) throws IOException,
+            InterruptedException {
 
         PrintStream output = listener.getLogger();
 
         output.println("Getting upstream revision...");
-        String upstream = getRevid(launcher, workspace, source);
+        String upstream = getRevid(launcher, workspace, listener, source);
         output.println(upstream);
 
         output.println("Getting local revision...");
-        String local = getRevid(launcher, workspace, workspace.getRemote());
+        String local = getRevid(launcher, workspace, listener, workspace.getRemote());
         output.println(local);
 
         return ! upstream.equals(local);
@@ -157,9 +213,11 @@ public class BazaarSCM extends SCM implements Serializable {
     /**
      * Updates the current workspace.
      */
-    private boolean update(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
+    private boolean update(AbstractBuild<?, ?> build, Launcher launcher,
+            FilePath workspace, BuildListener listener, File changelogFile)
+            throws InterruptedException, IOException {
         try {
-            String oldid = getRevid(launcher, workspace, workspace.getRemote());
+            String oldid = getRevid(launcher, workspace, listener, workspace.getRemote());
 
             if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite", source)
                     .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
@@ -167,7 +225,7 @@ public class BazaarSCM extends SCM implements Serializable {
                 return false;
             }
 
-            String newid = getRevid(launcher, workspace, workspace.getRemote());
+            String newid = getRevid(launcher, workspace, listener, workspace.getRemote());
             getLog(launcher, workspace, oldid, newid, changelogFile);
 
         } catch (IOException e) {
