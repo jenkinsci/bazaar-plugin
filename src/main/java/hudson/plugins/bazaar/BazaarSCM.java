@@ -21,7 +21,6 @@ import hudson.scm.SCMDescriptor;
 import hudson.scm.SCMRevisionState;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,12 +28,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.ServletException;
 import net.sf.json.JSONObject;
@@ -145,6 +142,7 @@ public class BazaarSCM extends SCM implements Serializable {
         output.println(upstream);
         final BazaarRevisionState remote = new BazaarRevisionState(upstream);
         final Change change;
+        output.printf("Baseline is %s.\n", baseline);
         if ((baseline == SCMRevisionState.NONE)
             // appears that other instances of None occur - its not a singleton.
             // so do a (fugly) class check.

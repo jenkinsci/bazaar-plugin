@@ -23,4 +23,8 @@ public class BazaarRevisionState extends SCMRevisionState {
         this.rev_id = rev_id;
     }
 
-}
+    @Override
+    public String toString() {
+        return "bazaar revision id " + rev_id;
+
+    }
