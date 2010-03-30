@@ -26,5 +26,5 @@ public class BazaarRevisionState extends SCMRevisionState {
     @Override
     public String toString() {
         return "bazaar revision id " + rev_id;
-
     }
+}
