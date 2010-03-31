@@ -140,7 +140,7 @@ public class BazaarSCM extends SCM implements Serializable {
         output.printf("Getting current remote revision...");
         String upstream = getRevid(launcher, workspace, listener, source);
         output.println(upstream);
-        final BazaarRevisionState remote = new BazaarRevisionState(upstream);
+        final BazaarRevisionState remote = (upstream == null) ? null : new BazaarRevisionState(upstream);
         final Change change;
         output.printf("Baseline is %s.\n", baseline);
         if ((baseline == SCMRevisionState.NONE)
@@ -167,7 +167,7 @@ public class BazaarSCM extends SCM implements Serializable {
         output.println("Getting local revision...");
         String local = getRevid(launcher, build.getWorkspace(), listener, build.getWorkspace().getRemote());
         output.println(local);
-        return new BazaarRevisionState(local);
+        return local == null ? null : new BazaarRevisionState(local);
     }
 
     /** for old hudsons - delete at will **/
