@@ -20,6 +20,8 @@ public class BazaarRevisionState extends SCMRevisionState {
     public final String rev_id;
 
     public BazaarRevisionState(String rev_id) {
+        if (null == rev_id)
+            throw new AssertionError("rev_id must not be null");
         this.rev_id = rev_id;
     }
 
