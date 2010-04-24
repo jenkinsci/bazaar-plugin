@@ -98,7 +98,7 @@ public class BazaarSCM extends SCM implements Serializable {
             starter = starter.stderr(stderr);
             // not needed without workspaces : -d starter = starter.pwd(workspace);
             final int ret = starter.join();
-            final String info_output = new String("bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"");
+            final String info_output = "bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
             if (ret != 0) {
                 logger.warning(info_output);
             } else {
@@ -113,7 +113,7 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         if (rev == null) {
-            logger.warning("Failed to get revision id for: " + root);
+            logger.log(Level.WARNING, "Failed to get revision id for: {0}", root);
         }
 
         return rev;
@@ -126,7 +126,7 @@ public class BazaarSCM extends SCM implements Serializable {
             String version = "revid:" + oldver + "..revid:" + newver;
             if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "log", "-v", "-r", version, "--long", "--show-ids")
                     .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
-                logger.warning("bzr log -v -r returned " + ret);
+                logger.log(Level.WARNING, "bzr log -v -r returned {0}", ret);
             } else {
                 FileOutputStream fos = new FileOutputStream(changeLog);
                 fos.write(baos.toByteArray());
