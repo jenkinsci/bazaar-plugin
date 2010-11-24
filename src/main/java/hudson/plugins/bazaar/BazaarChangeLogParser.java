@@ -36,6 +36,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
             }
 
             s = s.trim();
+            len = s.length();
             if ("------------------------------------------------------------".equals(s)) {
                 if (entry != null && state > 2) {
                     if (message.length() != 0) {
