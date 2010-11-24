@@ -12,21 +12,41 @@ import hudson.scm.SCMRevisionState;
  * @author Robert Collins <robertc@robertcollins.net>
  */
 public class BazaarRevisionState extends SCMRevisionState {
-  // TODO: have this extends AbstractScmTagAction and offer after-the-fact tagging operation
+    // TODO: have this extends AbstractScmTagAction and offer after-the-fact tagging operation
 
-    /**
-     * bzr revid from {@code bzr revision-info }
-     */
-    public final String rev_id;
+    private final String revNo;
+    private final String rev_id;
 
-    public BazaarRevisionState(String rev_id) {
-        if (null == rev_id)
-            throw new AssertionError("rev_id must not be null");
-        this.rev_id = rev_id;
+    public BazaarRevisionState(String revNo, String revId) {
+        this.revNo = revNo;
+        this.rev_id = revId;
+    }
+
+    public String getRevNo() {
+        return this.revNo;
+    }
+
+    public String getRevId() {
+        return this.rev_id;
     }
 
     @Override
     public String toString() {
-        return "bazaar revid:" + rev_id;
+        return "RevisionState revno:" + this.revNo + " revid:" + this.rev_id;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        boolean result = false;
+        if (other instanceof BazaarRevisionState) {
+            BazaarRevisionState that = (BazaarRevisionState) other;
+            result = this.rev_id.equals(that.rev_id);
+        }
+        return result;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.rev_id.hashCode();
     }
 }
