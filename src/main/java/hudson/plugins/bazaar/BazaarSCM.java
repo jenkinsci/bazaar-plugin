@@ -270,7 +270,7 @@ public class BazaarSCM extends SCM implements Serializable {
     }
 
     @Override
-    public void buildEnvVars(AbstractBuild build, Map<String, String> env) {
+    public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
     }
 
     @Override
