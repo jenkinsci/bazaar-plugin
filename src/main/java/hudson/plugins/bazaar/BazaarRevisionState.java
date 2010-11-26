@@ -12,7 +12,6 @@ import hudson.scm.SCMRevisionState;
  * @author Robert Collins <robertc@robertcollins.net>
  */
 public class BazaarRevisionState extends SCMRevisionState {
-    // TODO: have this extends AbstractScmTagAction and offer after-the-fact tagging operation
 
     private final String revNo;
     private final String rev_id;

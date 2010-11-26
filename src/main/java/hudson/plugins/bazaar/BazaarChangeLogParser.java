@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -61,6 +62,10 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     }
                     break;
                 case 1:
+                    if (ident == nident && s.startsWith("tags:")) {
+                        String tags = s.substring("tags:".length()).trim();
+                        entry.setTags(Arrays.asList(tags.split(", ")));
+                    }
                     if (ident == nident && s.startsWith("revision-id:")) {
                         String rev = s.substring("revision-id:".length()).trim();
                         entry.setRevid(rev);

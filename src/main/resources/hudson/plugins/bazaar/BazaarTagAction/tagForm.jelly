@@ -1,0 +1,73 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <j:set var="descriptor" value="${it.descriptor}" />
+
+  <l:layout norefresh="true" xmlns:local="local">
+    <st:include it="${it.build}" page="sidepanel.jelly" />
+    <l:main-panel>
+      <h1>${%Build} #${it.build.number}</h1>
+
+      <j:set var="tags" value="${it.tags}" />
+      <j:if test="${it.isTagged()}">
+        <p>
+          ${%This build is already tagged}:
+        </p>
+        <ul>
+          <j:forEach var="revision" items="${tags.entrySet()}">
+            <li>
+              ${revision.key}
+              <ul>
+                <j:forEach var="tag" items="${revision.value}">
+                  <li>${tag}</li>
+                </j:forEach>
+              </ul>
+            </li>
+          </j:forEach>
+        </ul>
+      </j:if>
+
+      <j:choose>
+        <j:when test="${tags.isEmpty()}">
+          ${%No revision to tag}
+        </j:when>
+        <j:otherwise>
+	      <j:if test="${h.hasPermission(it.build,it.permission)}">
+	        <h2>${%Add tag}</h2>
+	        <form action="submit" method="post" enctype="multipart/form-data" name="tag">
+	          <table class="middle-align">
+	            <tr>
+	              <th />
+	              <th>${%Revision}</th>
+	              <th>${%Tag name}</th>
+	            </tr>
+	            <j:forEach var="revision" items="${tags.keySet()}" varStatus="loop">
+	              <tr style="color: grey;">
+	                <td>
+	                  <input type="checkbox" name="tag${loop.index}"
+	                         id="tag${loop.index}" onchange="updateRow(this,${loop.index})" />
+	                </td>
+	                <td style="white-space:nowrap;"><label for="tag${loop.index}">
+	                  ${revision}
+	                </label></td>
+	                <td width="100%">
+	                  <input type="text" name="name${loop.index}" disabled="disabled"
+	                         value="" style="width:100%" id="name${loop.index}" />
+	                </td>
+	              </tr>
+	            </j:forEach>
+	          </table>
+	          <f:submit value="${%Tag}" />
+	          <script>
+	            <!-- update the visual feedback depending on the checkbox state -->
+	            function updateRow(e,i) {
+	              e.parentNode.parentNode.style.color = e.checked ? "inherit" : "grey";
+	              $("name"+i).disabled = !e.checked;
+	            }
+	          </script>
+	        </form>
+	      </j:if>
+        </j:otherwise>
+      </j:choose>
+    </l:main-panel>
+  </l:layout>
+</j:jelly>
