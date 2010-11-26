@@ -7,17 +7,16 @@
     <l:main-panel>
       <h1>${%Build} #${it.build.number}</h1>
 
-      <j:set var="tags" value="${it.tags}" />
       <j:if test="${it.isTagged()}">
         <p>
           ${%This build is already tagged}:
         </p>
         <ul>
-          <j:forEach var="revision" items="${tags.entrySet()}">
+          <j:forEach var="revision" items="${it.revisions}">
             <li>
-              ${revision.key}
+              ${revision}
               <ul>
-                <j:forEach var="tag" items="${revision.value}">
+                <j:forEach var="tag" items="${revision.tags}">
                   <li>${tag}</li>
                 </j:forEach>
               </ul>
@@ -27,7 +26,7 @@
       </j:if>
 
       <j:choose>
-        <j:when test="${tags.isEmpty()}">
+        <j:when test="${!it.hasRevisions()}">
           ${%No revision to tag}
         </j:when>
         <j:otherwise>
@@ -40,21 +39,29 @@
 	              <th>${%Revision}</th>
 	              <th>${%Tag name}</th>
 	            </tr>
-	            <j:forEach var="revision" items="${tags.keySet()}" varStatus="loop">
+	            <j:forEach var="revision" items="${it.revisions}" varStatus="loop">
 	              <tr style="color: grey;">
 	                <td>
 	                  <input type="checkbox" name="tag${loop.index}"
 	                         id="tag${loop.index}" onchange="updateRow(this,${loop.index})" />
 	                </td>
-	                <td style="white-space:nowrap;"><label for="tag${loop.index}">
-	                  ${revision}
-	                </label></td>
+	                <td style="white-space:nowrap;">
+	                  <label for="tag${loop.index}">${revision}</label>
+	                </td>
 	                <td width="100%">
 	                  <input type="text" name="name${loop.index}" disabled="disabled"
 	                         value="" style="width:100%" id="name${loop.index}" />
 	                </td>
 	              </tr>
 	            </j:forEach>
+	            <tr>
+	                <td>
+	                  <input type="checkbox" name="force" id="force" />
+	                </td>
+	                <td style="white-space:nowrap;" colspan="2">
+	                  <label for="force">${%Force}</label>
+	                </td>
+	            </tr>
 	          </table>
 	          <f:submit value="${%Tag}" />
 	          <script>

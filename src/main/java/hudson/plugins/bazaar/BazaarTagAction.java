@@ -18,6 +18,7 @@ import hudson.util.MultipartFormDataParser;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,7 @@ import org.kohsuke.stapler.StaplerResponse;
 
 public class BazaarTagAction extends AbstractScmTagAction implements Describable<BazaarTagAction> {
 
-    private final Map<BazaarRevision, List<String>> tags = new HashMap<BazaarRevision, List<String>>();
+    private final List<BazaarRevision> revisions = new ArrayList<BazaarRevision>();
 
     protected BazaarTagAction(AbstractBuild<?,?> build) {
         super(build);
@@ -49,16 +50,23 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
 
     @Override
     public boolean isTagged() {
-        for (List<String> t : tags.values()) {
-            if (!t.isEmpty()) {
+        if (! hasRevisions()) {
+            return false;
+        }
+        for (BazaarRevision revision : this.revisions) {
+            if (revision.isTagged()) {
                 return true;
             }
         }
         return false;
     }
 
-    public Map<BazaarRevision, List<String>> getTags() {
-        return this.tags;
+    public List<BazaarRevision> getRevisions() {
+        return this.revisions;
+    }
+
+    public boolean hasRevisions() {
+        return this.revisions != null && ! this.revisions.isEmpty();
     }
 
     public synchronized void doSubmit(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
@@ -69,26 +77,29 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
         Map<BazaarRevision, String> newTags = new HashMap<BazaarRevision, String>();
 
         int i=-1;
-        for (BazaarRevision e : tags.keySet()) {
+        for (BazaarRevision e : this.revisions) {
             ++i;
-            if (parser.get("tag"+i) != null) {
+            if (parser.get("tag" + i) != null) {
                 newTags.put(e, parser.get("name" + i));
             }
         }
         // TODO : add forcing and deleting
 
-        new TagWorkerThread(newTags).start();
+        new TagWorkerThread(newTags, parser.get("force") != null).start();
 
         rsp.sendRedirect(".");
     }
 
+
     public static final class BazaarRevision implements Serializable {
         private String revId;
         private String revNo;
+        private List<String> tags;
 
-        public BazaarRevision(String revId, String revNo) {
+        public BazaarRevision(String revId, String revNo, List<String> tags) {
             this.revId = revId;
             this.revNo = revNo;
+            this.tags = tags;
         }
 
         public String getRevId() {
@@ -97,6 +108,18 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
 
         public String getRevNo() {
             return revNo;
+        }
+
+        public List<String> getTags() {
+            return this.tags;
+        }
+
+        public void addTag(String tag) {
+            this.tags.add(tag);
+        }
+
+        public boolean isTagged() {
+            return ! this.tags.isEmpty();
         }
 
         @Override
@@ -110,7 +133,7 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
         public void onChangeLogParsed(AbstractBuild<?,?> build, BuildListener listener, ChangeLogSet<?> changelog) throws Exception {
             for (Object changelogEntry : changelog) {
                 BazaarChangeSet changeset = (BazaarChangeSet) changelogEntry;
-                tags.put(new BazaarRevision(changeset.getRevid(), changeset.getRevno()), changeset.getTags());
+                revisions.add(new BazaarRevision(changeset.getRevid(), changeset.getRevno(), changeset.getTags()));
             }
         }
     }
@@ -120,10 +143,12 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
      */
     private final class TagWorkerThread extends TaskThread {
         private final Map<BazaarRevision, String> tagSet;
+        private final boolean force;
 
-        public TagWorkerThread(Map<BazaarRevision, String> tagSet) {
+        public TagWorkerThread(Map<BazaarRevision, String> tagSet, boolean force) {
             super(BazaarTagAction.this, ListenerAndText.forMemory());
             this.tagSet = tagSet;
+            this.force = force;
         }
 
         @Override
@@ -140,14 +165,18 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
                     args.add(bazaarSCM.getDescriptor().getBzrExe(), "tag");
                     args.add("-r", e.getKey().getRevId());
                     args.add("-d", bazaarSCM.getSource());
+                    if (this.force) {
+                        args.add("--force");
+                    }
                     args.add(e.getValue());
 
                     if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).join() != 0) {
                         listener.error("Failed to tag");
                     } else {
-                        BazaarTagAction.this.tags.get(e.getKey()).add(e.getValue());
+                        e.getKey().addTag(e.getValue());
                     }
                 }
+                sleep(100);// to ensure logs display
                 getBuild().save();
            } catch (Throwable e) {
                e.printStackTrace(listener.fatalError(e.getMessage()));
