@@ -30,4 +30,11 @@ public abstract class BazaarRepositoryBrowser extends RepositoryBrowser<BazaarCh
      */
     public abstract URL getFileLink(BazaarAffectedFile affectedFile) throws IOException;
 
+    protected static boolean isRenaming(BazaarAffectedFile affectedFile) {
+        return affectedFile.getOldPath() != null;
+    }
+
+    protected static boolean isFolderPath(String path) {
+        return path.endsWith("/");
+    }
 }

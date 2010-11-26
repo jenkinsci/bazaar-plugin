@@ -48,10 +48,6 @@ public class Loggerhead extends BazaarRepositoryBrowser {
         return url;
     }
 
-    private static boolean isRenaming(BazaarAffectedFile affectedFile) {
-        return affectedFile.getOldPath() != null;
-    }
-
     @Override
     public URL getFileLink(BazaarAffectedFile affectedFile) throws IOException {
         String path = affectedFile.getPath().trim();
@@ -67,10 +63,6 @@ public class Loggerhead extends BazaarRepositoryBrowser {
             browsingType = "files";
         }
         return browsingType;
-    }
-
-    private static boolean isFolderPath(String path) {
-        return path.endsWith("/");
     }
 
 
