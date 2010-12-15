@@ -76,9 +76,9 @@ public class BazaarSCM extends SCM implements Serializable {
         return clean;
     }
 
-    private String getRevid(Launcher launcher, TaskListener listener, String root)
+    private BazaarRevisionState getRevisionState(Launcher launcher, TaskListener listener, String root)
             throws InterruptedException {
-        String rev = null;
+        BazaarRevisionState rev = null;
         try {
             if (launcher == null) {
                 /* Running for a VM or whathaveyou: make a launcher on master
@@ -102,8 +102,8 @@ public class BazaarSCM extends SCM implements Serializable {
             if (ret != 0) {
                 logger.warning(info_output);
             } else {
-              String[] infos = stdout.toString().split("\\s");
-              rev = infos[1];
+              String[] infos = stdout.toString().trim().split("\\s");
+              rev = new BazaarRevisionState(infos[0], infos[1]);
             }
             // output.printf("info result: %s\n", info_output);
         } catch (IOException e) {
@@ -113,17 +113,17 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         if (rev == null) {
-            logger.log(Level.WARNING, "Failed to get revision id for: {0}", root);
+            logger.log(Level.WARNING, "Failed to get revision state for: {0}", root);
         }
 
         return rev;
     }
 
-    private void getLog(Launcher launcher, FilePath workspace, String oldver, String newver, File changeLog) throws InterruptedException {
+    private void getLog(Launcher launcher, FilePath workspace, BazaarRevisionState oldRevisionState, BazaarRevisionState newRevisionState, File changeLog) throws InterruptedException {
         try {
             int ret;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            String version = "revid:" + oldver + "..revid:" + newver;
+            String version = "revid:" + oldRevisionState.getRevId() + "..revid:" + newRevisionState.getRevId();
             if ((ret = launcher.launch().cmds(getDescriptor().getBzrExe(), "log", "-v", "-r", version, "--long", "--show-ids")
                     .envs(EnvVars.masterEnvVars).stdout(baos).pwd(workspace).join()) != 0) {
                 logger.log(Level.WARNING, "bzr log -v -r returned {0}", ret);
@@ -146,16 +146,15 @@ public class BazaarSCM extends SCM implements Serializable {
             IOException, InterruptedException {
         PrintStream output = listener.getLogger();
         output.printf("Getting current remote revision...");
-        String upstream = getRevid(launcher, listener, source);
-        output.println(upstream);
-        final BazaarRevisionState remote = (upstream == null) ? null : new BazaarRevisionState(upstream);
+        final BazaarRevisionState remote = getRevisionState(launcher, listener, source);
+        output.println(remote);
         final Change change;
         output.printf("Baseline is %s.\n", baseline);
         if ((baseline == SCMRevisionState.NONE)
             // appears that other instances of None occur - its not a singleton.
             // so do a (fugly) class check.
             || (baseline.getClass() != BazaarRevisionState.class)
-            || (!remote.rev_id.equals(((BazaarRevisionState)baseline).rev_id)))
+            || (!remote.equals(baseline)))
             change = Change.SIGNIFICANT;
         else
             change = Change.NONE;
@@ -173,9 +172,9 @@ public class BazaarSCM extends SCM implements Serializable {
             InterruptedException {
         PrintStream output = listener.getLogger();
         output.println("Getting local revision...");
-        String local = getRevid(launcher, listener, build.getWorkspace().getRemote());
+        BazaarRevisionState local = getRevisionState(launcher, listener, build.getWorkspace().getRemote());
         output.println(local);
-        return local == null ? null : new BazaarRevisionState(local);
+        return local;
     }
 
     /** for old hudsons - delete at will **/
@@ -187,11 +186,11 @@ public class BazaarSCM extends SCM implements Serializable {
         PrintStream output = listener.getLogger();
 
         output.println("Getting upstream revision...");
-        String upstream = getRevid(launcher, listener, source);
+        BazaarRevisionState upstream = getRevisionState(launcher, listener, source);
         output.println(upstream);
 
         output.println("Getting local revision...");
-        String local = getRevid(launcher, listener, workspace.getRemote());
+        BazaarRevisionState local = getRevisionState(launcher, listener, workspace.getRemote());
         output.println(local);
 
         return ! upstream.equals(local);
@@ -223,7 +222,7 @@ public class BazaarSCM extends SCM implements Serializable {
             FilePath workspace, BuildListener listener, File changelogFile)
             throws InterruptedException, IOException {
         try {
-            String oldid = getRevid(launcher, listener, workspace.getRemote());
+            BazaarRevisionState oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
 
             if (launcher.launch().cmds(getDescriptor().getBzrExe(), "pull", "--overwrite", source)
                     .envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
@@ -231,8 +230,8 @@ public class BazaarSCM extends SCM implements Serializable {
                 return false;
             }
 
-            String newid = getRevid(launcher, listener, workspace.getRemote());
-            getLog(launcher, workspace, oldid, newid, changelogFile);
+            BazaarRevisionState newRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
+            getLog(launcher, workspace, oldRevisionState, newRevisionState, changelogFile);
 
         } catch (IOException e) {
             listener.error("Failed to pull");
@@ -270,7 +269,11 @@ public class BazaarSCM extends SCM implements Serializable {
     }
 
     @Override
-    public void buildEnvVars(AbstractBuild build, Map<String, String> env) {
+    public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
+        BazaarRevisionState revisionState = (BazaarRevisionState) build.getAction(SCMRevisionState.class);
+        if (revisionState != null && revisionState.getRevNo() != null) {
+            env.put("BZR_REVISION", revisionState.getRevNo());
+        }
     }
 
     @Override
