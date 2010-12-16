@@ -277,6 +277,7 @@ public class BazaarSCM extends SCM implements Serializable {
           }
           if (revisionState.getRevId() != null) {
             env.put("BZR_REVID", revisionState.getRevId());
+          }
         }
     }
 
