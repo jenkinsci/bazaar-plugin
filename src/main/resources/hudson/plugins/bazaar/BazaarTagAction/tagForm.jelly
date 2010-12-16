@@ -17,7 +17,7 @@
               ${revision}
               <ul>
                 <j:forEach var="tag" items="${revision.tags}">
-                  <li>${tag}</li>
+                  <li>${tag} (<a href="delete?revid=${revision.revId}&amp;tag=${tag}">${%Delete}</a>)</li>
                 </j:forEach>
               </ul>
             </li>

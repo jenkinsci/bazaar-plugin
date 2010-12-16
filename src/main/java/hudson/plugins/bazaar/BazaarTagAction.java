@@ -79,17 +79,21 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
         int i=-1;
         for (BazaarRevision e : this.revisions) {
             ++i;
-            if (parser.get("tag" + i) != null) {
+            if (parser.get("tag" + i) != null && ! parser.get("name" + i).isEmpty()) {
                 newTags.put(e, parser.get("name" + i));
             }
         }
-        // TODO : add forcing and deleting
 
         new TagWorkerThread(newTags, parser.get("force") != null).start();
 
         rsp.sendRedirect(".");
     }
 
+    public synchronized void doDelete(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
+        getACL().checkPermission(getPermission());
+
+        rsp.sendRedirect(".");
+    }
 
     public static final class BazaarRevision implements Serializable {
         private String revId;
