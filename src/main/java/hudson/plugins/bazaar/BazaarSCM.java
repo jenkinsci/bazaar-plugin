@@ -2,25 +2,26 @@ package hudson.plugins.bazaar;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.FilePath.FileCallable;
 import hudson.FilePath;
+import hudson.FilePath.FileCallable;
 import hudson.Launcher;
 import hudson.Launcher.LocalLauncher;
 import hudson.Launcher.ProcStarter;
+import hudson.model.BuildListener;
+import hudson.model.TaskListener;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Hudson;
-import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
 import hudson.scm.PollingResult.Change;
-import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
 import hudson.scm.SCMRevisionState;
+import hudson.scm.SCM;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,11 +34,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+
 import javax.servlet.ServletException;
+
 import net.sf.json.JSONObject;
+
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.framework.io.ByteBuffer;
 
 /**
@@ -52,11 +57,13 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     private final String source;
     private final boolean clean;
+    private final BazaarRepositoryBrowser browser;
 
     @DataBoundConstructor
-    public BazaarSCM(String source, boolean clean) {
+    public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser) {
         this.source = source;
         this.clean = clean;
+        this.browser = browser;
     }
 
     /**
@@ -74,6 +81,12 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     public boolean isClean() {
         return clean;
+    }
+
+    @Override
+    @Exported
+    public BazaarRepositoryBrowser getBrowser() {
+        return browser;
     }
 
     private BazaarRevisionState getRevisionState(Launcher launcher, TaskListener listener, String root)
@@ -309,7 +322,7 @@ public class BazaarSCM extends SCM implements Serializable {
         private transient String version;
 
         private DescriptorImpl() {
-            super(BazaarSCM.class, null);
+            super(BazaarSCM.class, BazaarRepositoryBrowser.class);
             load();
         }
 

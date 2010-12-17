@@ -2,6 +2,7 @@
   <f:entry title="${%Repository URL}" help="/plugin/bazaar/help.html">
     <f:textbox field="source" />
   </f:entry>
+  <t:listScmBrowsers name="bzr.browser" />
   <f:advanced>
     <f:entry title="${%Clean Build}" help="/plugin/bazaar/clean.html">
       <f:checkbox name="bzr.clean" checked="${instance.clean}" />

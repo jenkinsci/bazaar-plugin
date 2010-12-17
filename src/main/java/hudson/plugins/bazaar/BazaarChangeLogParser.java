@@ -2,8 +2,9 @@ package hudson.plugins.bazaar;
 
 import hudson.model.AbstractBuild;
 import hudson.scm.ChangeLogParser;
-import java.io.BufferedReader;
+import hudson.scm.EditType;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -98,8 +99,10 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                             entry.setMsg(message.toString());
                             message.setLength(0);
                         } else {
+                            if (message.length() != 0) {
+                                message.append("\n");
+                            }
                             message.append(s);
-                            message.append("\n");
                         }
                     }
                     break;
@@ -113,7 +116,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("renamed:")){
                         state = 8;
                     } else {
-                        entry.getModifiedPaths().add(s);
+                        entry.addAffectedFile(createAffectedFile(EditType.EDIT, s));
 
                     }
 
@@ -128,7 +131,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("renamed:")){
                         state = 8;
                     } else {
-                        entry.getAddedPaths().add(s);
+                        entry.addAffectedFile(createAffectedFile(EditType.ADD, s));
                     }
 
                     break;
@@ -142,7 +145,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("renamed:")){
                         state = 8;
                     } else {
-                        entry.getDeletedPaths().add(s);
+                        entry.addAffectedFile(createAffectedFile(EditType.DELETE, s));
                     }
 
                     break;
@@ -156,7 +159,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     } else if (s.startsWith("renamed:")){
                         state = 8;
                     } else {
-                        entry.getModifiedPaths().add(s);
+                        entry.addAffectedFile(createAffectedFile(EditType.EDIT, s));
                     }
 
                     break;
@@ -179,5 +182,22 @@ public class BazaarChangeLogParser extends ChangeLogParser {
         entries = entries.subList(0, Math.max(0 ,entries.size() -1));
 
         return new BazaarChangeSetList(build, entries);
+    }
+
+    private BazaarAffectedFile createAffectedFile(EditType editType, String changelogLine) {
+        String oldPath = null;
+        String path = changelogLine.trim();
+        String fileId = "";
+        int index = changelogLine.lastIndexOf(' ');
+        if (index >= 0) {
+            path = changelogLine.substring(0, index).trim();
+            fileId = changelogLine.substring(index, changelogLine.length()).trim();
+        }
+        if (path.contains("=>")) {
+            String[] paths = path.split("=>");
+            oldPath = paths[0].trim();
+            path = paths[1].trim();
+        }
+        return new BazaarAffectedFile(editType, oldPath, path, fileId);
     }
 }

@@ -2,11 +2,12 @@ package hudson.plugins.bazaar;
 
 import hudson.model.User;
 import hudson.scm.ChangeLogSet;
-import hudson.scm.EditType;
+
+import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+
 import org.kohsuke.stapler.export.Exported;
 
 /**
@@ -26,14 +27,8 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     private String date;
     private String msg;
-    private List<String> added = new ArrayList<String>();
-    private List<String> deleted = new ArrayList<String>();
-    private List<String> modified = new ArrayList<String>();
 
-    /**
-     * Lazily computed.
-     */
-    private volatile List<String> affectedPaths;
+    private List<BazaarAffectedFile> affectedFiles = new ArrayList<BazaarAffectedFile>();
 
     /**
      * Commit message.
@@ -60,6 +55,11 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
     }
 
     @Exported
+    public String getRevision() {
+        return this.getRevno();
+    }
+
+    @Exported
     public String getRevid() {
         return revid;
     }
@@ -71,60 +71,19 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     @Override
     public Collection<String> getAffectedPaths() {
-        if (affectedPaths == null) {
-            List<String> r = new ArrayList<String>(added.size() + modified.size() + deleted.size());
-            r.addAll(added);
-            r.addAll(modified);
-            r.addAll(deleted);
-            affectedPaths = r;
-        }
-        return affectedPaths;
+        return new AbstractList<String>() {
+            public String get(int index) {
+                return affectedFiles.get(index).getPath();
+            }
+            public int size() {
+                return affectedFiles.size();
+            }
+        };
     }
 
-    /**
-     * Gets all the files that were added.
-     */
-    @Exported
-    public List<String> getAddedPaths() {
-        return added;
-    }
-
-    /**
-     * Gets all the files that were deleted.
-     */
-    @Exported
-    public List<String> getDeletedPaths() {
-        return deleted;
-    }
-
-    /**
-     * Gets all the files that were modified.
-     */
-    @Exported
-    public List<String> getModifiedPaths() {
-        return modified;
-    }
-
-    public List<String> getPaths(EditType kind) {
-        if (kind == EditType.ADD) {
-            return getAddedPaths();
-        }
-        if (kind == EditType.EDIT) {
-            return getModifiedPaths();
-        }
-        if (kind == EditType.DELETE) {
-            return getDeletedPaths();
-        }
-        return null;
-    }
-
-    /**
-     * Returns all three variations of {@link EditType}.
-     * Placed here to simplify access from views.
-     */
-    public List<EditType> getEditTypes() {
-        // return EditType.ALL;
-        return Arrays.asList(EditType.ADD, EditType.EDIT, EditType.DELETE);
+    @Override
+    public Collection<BazaarAffectedFile> getAffectedFiles() {
+        return affectedFiles;
     }
 
     @Override
@@ -158,5 +117,10 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public void addAffectedFile(BazaarAffectedFile affectedFile) {
+        affectedFile.setChangeSet(this);
+        this.affectedFiles.add(affectedFile);
     }
 }
