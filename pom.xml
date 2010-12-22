@@ -8,11 +8,18 @@
   </parent>
 
   <artifactId>bazaar</artifactId>
-  <version>1.7-SNAPSHOT</version>
+  <version>1.8-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Hudson Bazaar plugin</name>
   <description>Integrates Hudson to Bazaar SCM</description>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Bazaar+Plugin</url>
+
+  <distributionManagement>
+   <repository>
+    <id>java.net-m2-repository</id>
+    <url>http://maven.hudson-labs.org/content/repositories/releases/</url>
+   </repository>
+  </distributionManagement>
 
   <developers>
     <developer>
