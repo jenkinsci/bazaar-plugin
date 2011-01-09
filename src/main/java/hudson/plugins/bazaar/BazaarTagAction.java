@@ -201,15 +201,9 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
                         e.getKey().addTag(e.getValue());
                     }
                 }
+                getBuild().save();
            } catch (Throwable e) {
                e.printStackTrace(listener.fatalError(e.getMessage()));
-           } finally {
-               try {
-                   sleep(100);// to ensure logs display
-                   getBuild().save();
-               } catch (Throwable e) {
-                   e.printStackTrace(listener.fatalError(e.getMessage()));
-               }
            }
         }
     }
@@ -248,15 +242,9 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
                 } else {
                     revision.removeTag(tag);
                 }
+                getBuild().save();
            } catch (Throwable e) {
                e.printStackTrace(listener.fatalError(e.getMessage()));
-           } finally {
-               try {
-                   sleep(100);// to ensure logs display
-                   getBuild().save();
-               } catch (Throwable e) {
-                   e.printStackTrace(listener.fatalError(e.getMessage()));
-               }
            }
         }
     }
