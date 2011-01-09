@@ -92,13 +92,27 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
     public synchronized void doDelete(StaplerRequest req, StaplerResponse rsp) throws IOException, ServletException {
         getACL().checkPermission(getPermission());
 
+        if (req.getParameter("tag") != null) {
+            BazaarRevision revision = null;
+            String tag = null;
+
+            for (BazaarRevision e : this.revisions) {
+                if (e.getRevId().equals(req.getParameter("revid"))) {
+                    revision = e;
+                    tag = req.getParameter("tag");
+                }
+            }
+
+            new TagDeletionWorkerThread(revision, tag).start();
+        }
+
         rsp.sendRedirect(".");
     }
 
     public static final class BazaarRevision implements Serializable {
         private String revId;
         private String revNo;
-        private List<String> tags;
+        private List<String> tags = new ArrayList<String>();
 
         public BazaarRevision(String revId, String revNo, List<String> tags) {
             this.revId = revId;
@@ -115,15 +129,22 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
         }
 
         public List<String> getTags() {
+            if (this.tags == null) {
+                this.tags = new ArrayList<String>();
+            }
             return this.tags;
         }
 
         public void addTag(String tag) {
-            this.tags.add(tag);
+            this.getTags().add(tag);
+        }
+
+        public void removeTag(String tag) {
+            this.getTags().remove(tag);
         }
 
         public boolean isTagged() {
-            return ! this.tags.isEmpty();
+            return ! this.getTags().isEmpty();
         }
 
         @Override
@@ -180,10 +201,62 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
                         e.getKey().addTag(e.getValue());
                     }
                 }
-                sleep(100);// to ensure logs display
-                getBuild().save();
            } catch (Throwable e) {
                e.printStackTrace(listener.fatalError(e.getMessage()));
+           } finally {
+               try {
+                   sleep(100);// to ensure logs display
+                   getBuild().save();
+               } catch (Throwable e) {
+                   e.printStackTrace(listener.fatalError(e.getMessage()));
+               }
+           }
+        }
+    }
+
+    /**
+     * The thread that performs tag deleting operation asynchronously.
+     */
+    private final class TagDeletionWorkerThread extends TaskThread {
+        private final BazaarRevision revision;
+        private final String tag;
+
+        public TagDeletionWorkerThread(BazaarRevision revision , String tag) {
+            super(BazaarTagAction.this, ListenerAndText.forMemory());
+            this.revision = revision;
+            this.tag = tag;
+        }
+
+        @Override
+        protected void perform(TaskListener listener) {
+            try {
+                PrintStream logger = listener.getLogger();
+                Launcher launcher = new LocalLauncher(listener);
+                BazaarSCM bazaarSCM = (BazaarSCM) getBuild().getProject().getScm();
+
+                logger.println("Removing tag " + tag);
+
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add(bazaarSCM.getDescriptor().getBzrExe(), "tag");
+                args.add("-r", revision.getRevId());
+                args.add("-d", bazaarSCM.getSource());
+                args.add("--delete");
+                args.add(tag);
+
+                if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).join() != 0) {
+                    listener.error("Failed to delete tag");
+                } else {
+                    revision.removeTag(tag);
+                }
+           } catch (Throwable e) {
+               e.printStackTrace(listener.fatalError(e.getMessage()));
+           } finally {
+               try {
+                   sleep(100);// to ensure logs display
+                   getBuild().save();
+               } catch (Throwable e) {
+                   e.printStackTrace(listener.fatalError(e.getMessage()));
+               }
            }
         }
     }
