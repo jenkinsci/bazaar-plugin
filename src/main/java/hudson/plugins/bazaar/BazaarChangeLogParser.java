@@ -56,6 +56,10 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                 case 0:
                     if (ident == nident && s.startsWith("revno:")) {
                         String rev = s.substring("revno:".length()).trim();
+                        if (rev.contains("[merge]")) {
+                            entry.setMerge(true);
+                            rev = rev.substring(0, rev.length() - "[merge]".length()).trim();
+                        }
                         entry.setRevno(rev);
                         ++state;
                     }

@@ -28,6 +28,8 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
     private String date;
     private String msg;
 
+    private boolean isMerge = false;
+
     private List<BazaarAffectedFile> affectedFiles = new ArrayList<BazaarAffectedFile>();
 
     /**
@@ -67,6 +69,11 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
     @Exported
     public String getDate() {
         return date;
+    }
+
+    @Exported
+    public boolean isMerge() {
+        return this.isMerge;
     }
 
     @Override
@@ -117,6 +124,10 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     public void setDate(String date) {
         this.date = date;
+    }
+
+    public void setMerge(boolean isMerge) {
+        this.isMerge = isMerge;
     }
 
     public void addAffectedFile(BazaarAffectedFile affectedFile) {
