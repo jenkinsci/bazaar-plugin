@@ -24,6 +24,7 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
     private String author;
     private String revno;
     private String revid;
+    private List<String> tags = new ArrayList<String>();
 
     private String date;
     private String msg;
@@ -64,6 +65,11 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
     @Exported
     public String getRevid() {
         return revid;
+    }
+
+    @Exported
+    public List<String> getTags() {
+        return tags;
     }
 
     @Exported
@@ -120,6 +126,10 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     public void setRevid(String revid) {
         this.revid = revid;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 
     public void setDate(String date) {

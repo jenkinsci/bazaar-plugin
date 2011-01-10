@@ -202,11 +202,16 @@ public class BazaarSCM extends SCM implements Serializable {
             }
         });
 
+        boolean result = true;
         if (canUpdate) {
-            return update(clean, build, launcher, workspace, listener, changelogFile);
+            result = update(clean, build, launcher, workspace, listener, changelogFile);
         } else {
-            return clone(build, launcher, workspace, listener, changelogFile);
+            result = clone(build, launcher, workspace, listener, changelogFile);
         }
+
+        build.addAction(new BazaarTagAction(build));
+
+        return result;
     }
 
     /**
