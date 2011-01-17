@@ -251,7 +251,9 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         BazaarRevisionState newRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
-        getLog(launcher, workspace, oldRevisionState, newRevisionState, changelogFile);
+        if (oldRevisionState != null) {
+            getLog(launcher, workspace, oldRevisionState, newRevisionState, changelogFile);
+        }
 
         return true;
     }
