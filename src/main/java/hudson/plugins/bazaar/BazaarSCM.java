@@ -114,16 +114,16 @@ public class BazaarSCM extends SCM implements Serializable {
             final int ret = starter.join();
             final String info_output = "bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
             if (ret != 0) {
-              logger.warning(info_output);
+                logger.warning(info_output);
             } else {
-              String[] infos = stdout.toString().trim().split("\\s");
-              if (infos.length == 2)
-              {
-                rev = new BazaarRevisionState(infos[0], infos[1]);
-              } else {
-                logger.log(Level.WARNING, "Issue splitting: {0}",
-                    stdout.toString().trim());
-              }
+                String[] infos = stdout.toString().trim().split("\\s");
+                if (infos.length == 2)
+                {
+                    rev = new BazaarRevisionState(infos[0], infos[1]);
+                } else {
+                    logger.log(Level.WARNING, "Issue splitting: {0}",
+                               stdout.toString().trim());
+                }
             }
 
             // output.printf("info result: %s\n", info_output);
@@ -226,14 +226,10 @@ public class BazaarSCM extends SCM implements Serializable {
      * Updates the current workspace.
      */
     private boolean update(boolean clean, AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
-
-        BazaarRevisionState oldRevisionState = null;
-
-        if (!clean) {
-            oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
-        }
+        BazaarRevisionState oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
 
         boolean hasProblemOccured = false;
+
         if (clean) {
             hasProblemOccured = ! branch(build, launcher, workspace, listener);
         } else {
