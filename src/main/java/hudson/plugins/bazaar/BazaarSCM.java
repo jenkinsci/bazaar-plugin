@@ -104,40 +104,28 @@ public class BazaarSCM extends SCM implements Serializable {
             ByteArrayOutputStream stderr = new ByteArrayOutputStream();
             final String bzr_cmd = getDescriptor().getBzrExe();
             ProcStarter starter = launcher.launch();
-            int cmd_fail = 0;
-            boolean cmd_success = false;
-            while (! cmd_success && cmd_fail < 3)
-            {
 
-              starter = starter.cmds(bzr_cmd, "revision-info", "-d", root);
-              // The launcher should already have the right vars!
-              // starter = starter.envs(EnvVars.masterEnvVars);
-              starter = starter.stdout(stdout);
-              starter = starter.stderr(stderr);
-              // not needed without workspaces : -d starter = starter.pwd(workspace);
-              final int ret = starter.join();
-              final String info_output = "bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
-              if (ret != 0) {
-                logger.warning(info_output);
+            starter = starter.cmds(bzr_cmd, "revision-info", "-d", root);
+            // The launcher should already have the right vars!
+            // starter = starter.envs(EnvVars.masterEnvVars);
+            starter = starter.stdout(stdout);
+            starter = starter.stderr(stderr);
+            // not needed without workspaces : -d starter = starter.pwd(workspace);
+            final int ret = starter.join();
+            final String info_output = "bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
+            if (ret != 0) {
+              logger.warning(info_output);
+            } else {
+              String[] infos = stdout.toString().trim().split("\\s");
+              if (infos.length == 2)
+              {
+                rev = new BazaarRevisionState(infos[0], infos[1]);
               } else {
-                String[] infos = stdout.toString().trim().split("\\s");
-                if (infos.length == 2)
-                {
-                  rev = new BazaarRevisionState(infos[0], infos[1]);
-                  cmd_success = true;
-                } else {
-                  logger.log(Level.WARNING, "Issue splitting: {0}",
-                             stdout.toString().trim());
-                  cmd_fail++;
-                }
+                logger.log(Level.WARNING, "Issue splitting: {0}",
+                    stdout.toString().trim());
               }
             }
 
-            if (cmd_success != true)
-            {
-              logger.log(Level.WARNING,
-                         "Failed to get revision_info for: {0}", root);
-            }
             // output.printf("info result: %s\n", info_output);
         } catch (IOException e) {
             StringWriter w = new StringWriter();
@@ -238,7 +226,12 @@ public class BazaarSCM extends SCM implements Serializable {
      * Updates the current workspace.
      */
     private boolean update(boolean clean, AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
-        BazaarRevisionState oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
+
+        BazaarRevisionState oldRevisionState = null;
+
+        if (!clean) {
+            oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
+        }
 
         boolean hasProblemOccured = false;
         if (clean) {
