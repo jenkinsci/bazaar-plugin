@@ -126,7 +126,7 @@ public class BazaarSCM extends SCM implements Serializable {
                 }
             }
 
-            // output.printf("info result: %s\n", info_output);
+            output.printf("info result: %s\n", info_output);
         } catch (IOException e) {
             StringWriter w = new StringWriter();
             e.printStackTrace(new PrintWriter(w));
@@ -240,7 +240,7 @@ public class BazaarSCM extends SCM implements Serializable {
         }
 
         BazaarRevisionState newRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
-        if (oldRevisionState != null) {
+        if (oldRevisionState != null && newRevisionState != null) {
             getLog(launcher, workspace, oldRevisionState, newRevisionState, changelogFile);
         }
 
