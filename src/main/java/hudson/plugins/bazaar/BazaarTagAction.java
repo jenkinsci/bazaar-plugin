@@ -157,8 +157,10 @@ public class BazaarTagAction extends AbstractScmTagAction implements Describable
         @Override
         public void onChangeLogParsed(AbstractBuild<?,?> build, BuildListener listener, ChangeLogSet<?> changelog) throws Exception {
             for (Object changelogEntry : changelog) {
-                BazaarChangeSet changeset = (BazaarChangeSet) changelogEntry;
-                revisions.add(new BazaarRevision(changeset.getRevid(), changeset.getRevno(), changeset.getTags()));
+                if (changelogEntry instanceof BazaarChangeSet) {
+                    BazaarChangeSet changeset = (BazaarChangeSet) changelogEntry;
+                    revisions.add(new BazaarRevision(changeset.getRevid(), changeset.getRevno(), changeset.getTags()));
+                }
             }
         }
     }
