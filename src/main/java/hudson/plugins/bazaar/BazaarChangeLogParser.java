@@ -78,12 +78,16 @@ public class BazaarChangeLogParser extends ChangeLogParser {
                     break;
                 case 2:
                     if (ident == nident && s.startsWith("committer:")) {
-                        int endIndex = s.indexOf('<');
-                        if (endIndex < 0) {
-                            endIndex = len;
-                        }
-                        String author = s.substring("committer:".length(), endIndex).trim();
+                        int emailStartIndex = s.indexOf('<');
+                        String author = s.substring("committer:".length(), emailStartIndex < 0 ? len : emailStartIndex).trim();
                         entry.setAuthor(author);
+                        if (emailStartIndex >= 0) {
+                            int emailEndIndex = s.indexOf('>');
+                            if (emailEndIndex >= emailStartIndex) {
+                                String authorEmail = s.substring(1 + emailStartIndex, emailEndIndex).trim();
+                                entry.setAuthorEmail(authorEmail);
+                            }
+                        }
                         ++state;
                     }
                     break;

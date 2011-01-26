@@ -1,8 +1,11 @@
 package hudson.plugins.bazaar;
 
+import static hudson.Util.fixEmpty;
 import hudson.model.User;
 import hudson.scm.ChangeLogSet;
+import hudson.tasks.Mailer;
 
+import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +25,7 @@ import org.kohsuke.stapler.export.Exported;
 public class BazaarChangeSet extends ChangeLogSet.Entry {
 
     private String author;
+    private String authorEmail;
     private String revno;
     private String revid;
     private List<String> tags = new ArrayList<String>();
@@ -46,7 +50,22 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
      */
     @Exported
     public User getAuthor() {
-        return User.get(author);
+        User user = User.get(author, false);
+
+        if (user == null) {
+            user = User.get(author, true);
+
+            // set email address for user
+            if (fixEmpty(authorEmail) != null) {
+                try {
+                    user.addProperty(new Mailer.UserProperty(authorEmail));
+                } catch (IOException e) {
+                    // ignore error
+                }
+            }
+        }
+
+        return user;
     }
 
     /**
@@ -108,16 +127,12 @@ public class BazaarChangeSet extends ChangeLogSet.Entry {
         this.msg = msg;
     }
 
-    public void setUser(String author) {
-        this.author = author;
-    }
-
-    public String getUser() {
-        return author;
-    }
-
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public void setAuthorEmail(String authorEmail) {
+        this.authorEmail = authorEmail;
     }
 
     public void setRevno(String revno) {
