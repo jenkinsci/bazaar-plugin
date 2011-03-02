@@ -1,8 +1,0 @@
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-	<f:section title="Bazaar">
-    <f:entry title="bzr executable" help="/plugin/bazaar/bzrexe.html">
-	    <f:textbox name="bazaar.bzrExe" value="${descriptor.bzrExe}"
-        checkUrl="'${rootURL}/scm/BazaarSCM/bzrExeCheck?value='+escape(this.value)" />
-	  </f:entry>
-  </f:section>
-</j:jelly>
