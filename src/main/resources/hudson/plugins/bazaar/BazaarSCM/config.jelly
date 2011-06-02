@@ -7,5 +7,8 @@
     <f:entry title="${%Clean Build}" help="/plugin/bazaar/clean.html">
       <f:checkbox name="bzr.clean" checked="${instance.clean}" />
     </f:entry>
+    <f:entry title="${%Checkout}" help="/plugin/bazaar/checkout.html">
+      <f:checkbox name="bzr.checkout" checked="${instance.checkout}" />
+    </f:entry>
   </f:advanced>
 </j:jelly>

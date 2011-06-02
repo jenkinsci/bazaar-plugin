@@ -58,12 +58,22 @@ public class BazaarSCM extends SCM implements Serializable {
     private final String source;
     private final boolean clean;
     private final BazaarRepositoryBrowser browser;
+    private final boolean checkout = false;
+
+    @DataBoundConstructor
+    public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser, boolean checkout) {
+        this.source = source;
+        this.clean = clean;
+        this.browser = browser;
+        this.checkout = checkout;
+    }
 
     @DataBoundConstructor
     public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser) {
         this.source = source;
         this.clean = clean;
         this.browser = browser;
+        this.checkout = false;
     }
 
     /**
@@ -81,6 +91,14 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     public boolean isClean() {
         return clean;
+    }
+
+    /**
+     * True if we want to use checkout --lightweight
+     * @return
+     */
+    public boolean useCheckout() {
+        return checkout;
     }
 
     @Override
@@ -252,16 +270,25 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     private boolean pull(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(getDescriptor().getBzrExe(),
-                 "pull", "--overwrite",
-                 source);
+        String verb = null;
+        if (useCheckout()) {
+            verb = "update";
+            args.add(getDescriptor().getBzrExe(),
+                     verb,
+                     source);
+        } else {
+            verb = pull;
+            args.add(getDescriptor().getBzrExe(),
+                     verb, "--overwrite",
+                     source);
+        }
         try {
             if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
-                listener.error("Failed to pull");
+                listener.error("Failed to " + verb);
                 return false;
             }
         } catch (IOException e) {
-            listener.error("Failed to pull");
+            listener.error("Failed to " + verb);
             return false;
         }
 
@@ -291,17 +318,18 @@ public class BazaarSCM extends SCM implements Serializable {
             return false;
         }
 
+        String verb = useCheckout() ? "checkout" : "branch";
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(getDescriptor().getBzrExe(),
-                 "branch",
+                 verb,
                  source, workspace.getRemote());
         try {
             if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).join() != 0) {
-                listener.error("Failed to clone " + source);
+                listener.error("Failed to " + verb + " " + source);
                 return false;
             }
         } catch (IOException e) {
-            e.printStackTrace(listener.error("Failed to clone " + source));
+            e.printStackTrace(listener.error("Failed to " + verb + " " + source));
             return false;
         }
 
