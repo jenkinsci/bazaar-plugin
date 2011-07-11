@@ -273,7 +273,7 @@ public class BazaarSCM extends SCM implements Serializable {
                      verb,
                      source);
         } else {
-            verb = pull;
+            verb = "pull";
             args.add(getDescriptor().getBzrExe(),
                      verb, "--overwrite",
                      source);
