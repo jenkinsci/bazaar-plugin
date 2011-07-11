@@ -68,7 +68,6 @@ public class BazaarSCM extends SCM implements Serializable {
         this.checkout = checkout;
     }
 
-    @DataBoundConstructor
     public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser) {
         this.source = source;
         this.clean = clean;
