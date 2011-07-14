@@ -58,7 +58,7 @@ public class BazaarSCM extends SCM implements Serializable {
     private final String source;
     private final boolean clean;
     private final BazaarRepositoryBrowser browser;
-    private final boolean checkout = false;
+    private final boolean checkout;
 
     @DataBoundConstructor
     public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser, boolean checkout) {
@@ -68,12 +68,8 @@ public class BazaarSCM extends SCM implements Serializable {
         this.checkout = checkout;
     }
 
-    @DataBoundConstructor
     public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser) {
-        this.source = source;
-        this.clean = clean;
-        this.browser = browser;
-        this.checkout = false;
+        this(source, clean, browser, false);
     }
 
     /**
@@ -277,7 +273,7 @@ public class BazaarSCM extends SCM implements Serializable {
                      verb,
                      source);
         } else {
-            verb = pull;
+            verb = "pull";
             args.add(getDescriptor().getBzrExe(),
                      verb, "--overwrite",
                      source);

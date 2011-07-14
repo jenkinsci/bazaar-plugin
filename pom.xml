@@ -81,20 +81,6 @@
     <url>http://github.com/jenkinsci/bazaar-plugin</url>
   </scm>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.kohsuke.stapler</groupId>
-      <artifactId>stapler-jelly</artifactId>
-      <version>1.154</version>
-      <scope>provided</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.collections</groupId>
-          <artifactId>google-collections</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-  </dependencies>
 
   <repositories>
     <repository>
