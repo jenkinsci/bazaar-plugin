@@ -194,6 +194,7 @@ public class BazaarChangeLogParser extends ChangeLogParser {
         // Remove current revision entry
         entries = entries.subList(0, Math.max(0 ,entries.size() -1));
 
+        in.close();
         return new BazaarChangeSetList(build, entries);
     }
 
