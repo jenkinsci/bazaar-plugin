@@ -93,7 +93,7 @@ public class BazaarSCM extends SCM implements Serializable {
      * True if we want to use checkout --lightweight
      * @return
      */
-    public boolean useCheckout() {
+    public boolean isCheckout() {
         return checkout;
     }
 
@@ -267,7 +267,7 @@ public class BazaarSCM extends SCM implements Serializable {
     private boolean pull(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         String verb = null;
-        if (useCheckout()) {
+        if (isCheckout()) {
             verb = "update";
             args.add(getDescriptor().getBzrExe(),
                      verb,
@@ -314,7 +314,7 @@ public class BazaarSCM extends SCM implements Serializable {
             return false;
         }
 
-        String verb = useCheckout() ? "checkout" : "branch";
+        String verb = isCheckout() ? "checkout" : "branch";
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add(getDescriptor().getBzrExe(),
                  verb,
