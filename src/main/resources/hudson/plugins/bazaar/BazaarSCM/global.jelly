@@ -3,6 +3,9 @@
     <f:entry title="bzr executable" help="/plugin/bazaar/bzrexe.html">
 	    <f:textbox name="bazaar.bzrExe" value="${descriptor.bzrExe}"
         checkUrl="'${rootURL}/scm/BazaarSCM/bzrExeCheck?value='+escape(this.value)" />
-	  </f:entry>
+    </f:entry>
+    <f:entry title="need branch regular expression" help="/plugin/bazaar/needbranchregexp.html">
+        <f:textbox name="bazaar.needBranchRegexp" value="${descriptor.needBranchRegexp}" />
+    </f:entry>
   </f:section>
 </j:jelly>
