@@ -185,11 +185,11 @@ public class BazaarSCM extends SCM implements Serializable {
         output.println(remote);
         final Change change;
         output.printf("Baseline is %s.\n", baseline);
-        if ((baseline == SCMRevisionState.NONE)
+        if (remote != null && baseline != null && ((baseline == SCMRevisionState.NONE)
             // appears that other instances of None occur - its not a singleton.
             // so do a (fugly) class check.
             || (baseline.getClass() != BazaarRevisionState.class)
-            || (!remote.equals(baseline)))
+            || (!remote.equals(baseline))))
             change = Change.SIGNIFICANT;
         else
             change = Change.NONE;
