@@ -224,7 +224,7 @@ public class BazaarSCM extends SCM implements Serializable {
             }
         });
 
-        boolean result = true;
+        boolean result;
         if (canUpdate) {
             result = update(clean, build, launcher, workspace, listener, changelogFile);
         } else {
@@ -236,15 +236,38 @@ public class BazaarSCM extends SCM implements Serializable {
         return result;
     }
 
+    private boolean needToBranch(Launcher launcher, String workspace) throws IOException, InterruptedException {
+        boolean doReBranch = false;
+        String patterns[] = getDescriptor().getNeedBranchRegexp().split(",");
+        final String bzr_cmd = getDescriptor().getBzrExe();
+        ProcStarter starter = launcher.launch();
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        starter = starter.cmds(bzr_cmd, "revision-info", "-d", workspace);
+        starter = starter.stdout(stdout);
+        starter = starter.stderr(stderr);
+        int ret = starter.join();
+
+        if (ret != 0) {
+            String str_source = stderr.toString().replaceAll("\n", " ");
+            for (String pattern : patterns) {
+                if (pattern.length() > 0)
+                    doReBranch |= str_source.matches(pattern);
+            }
+        }
+        return doReBranch;
+    }
     /**
      * Updates the current workspace.
      */
     private boolean update(boolean clean, AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
         BazaarRevisionState oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
 
-        boolean hasProblemOccured = false;
-
-        if (clean) {
+        boolean hasProblemOccured;
+        boolean needToBranch = needToBranch(launcher, workspace.toString());
+        
+        if (clean || needToBranch) {
             hasProblemOccured = ! branch(build, launcher, workspace, listener);
         } else {
             hasProblemOccured = ! pull(build, launcher, workspace, listener);
@@ -266,7 +289,7 @@ public class BazaarSCM extends SCM implements Serializable {
      */
     private boolean pull(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        String verb = null;
+        String verb;
         if (isCheckout()) {
             verb = "update";
             args.add(getDescriptor().getBzrExe(),
@@ -359,6 +382,7 @@ public class BazaarSCM extends SCM implements Serializable {
         @Extension
         public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
         private String bzrExe;
+        private String needBranchRegexp;
         private transient String version;
 
         private DescriptorImpl() {
@@ -377,6 +401,10 @@ public class BazaarSCM extends SCM implements Serializable {
         public String getBzrExe() {
             return (bzrExe == null) ? "bzr" : bzrExe;
         }
+        
+        public String getNeedBranchRegexp() {
+            return (needBranchRegexp == null) ? ".*ERROR: Not a branch.*" : needBranchRegexp;
+        }
 
         @Override
         public SCM newInstance(StaplerRequest req, JSONObject formData) throws FormException {
@@ -387,6 +415,7 @@ public class BazaarSCM extends SCM implements Serializable {
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             bzrExe = req.getParameter("bazaar.bzrExe");
+            needBranchRegexp = req.getParameter("bazaar.needBranchRegexp");
             version = null;
             save();
             return true;
