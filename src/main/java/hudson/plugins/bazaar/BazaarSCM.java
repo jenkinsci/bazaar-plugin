@@ -281,6 +281,13 @@ public class BazaarSCM extends SCM implements Serializable {
         try {
             if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
                 listener.error("Failed to " + verb);
+		try {
+		    listener.getLogger().println("Since BZR itself isn't crash safe, we'll clean the workspace so that on the next try we'll do a clean pull...");
+		    workspace.deleteRecursive();
+		} catch (IOException e) {
+		    e.printStackTrace(listener.error("Failed to clean the workspace"));
+		    return false;
+		}
                 return false;
             }
         } catch (IOException e) {
