@@ -22,6 +22,11 @@
 
   <developers>
     <developer>
+      <id>stewart</id>
+      <name>Stewart Smith</name>
+      <email>stewart@flamingspork.com</email>
+    </developer>
+    <developer>
       <id>trondn</id>
       <name>Trond Norbye</name>
     </developer>
