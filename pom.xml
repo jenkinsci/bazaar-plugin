@@ -26,15 +26,6 @@
       <name>Stewart Smith</name>
       <email>stewart@flamingspork.com</email>
     </developer>
-    <developer>
-      <id>trondn</id>
-      <name>Trond Norbye</name>
-    </developer>
-    <developer>
-      <id>sdirector</id>
-      <name>Monty Taylor</name>
-      <email>mordred@inaugust.com</email>
-    </developer>
   </developers>
     <build>
         <plugins>
