@@ -12,6 +12,12 @@
   <name>Jenkins Bazaar plugin</name>
   <description>Integrates Jenkins to Bazaar SCM</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Bazaar+Plugin</url>
+  <licenses>
+    <license>
+      <name>MIT license</name>
+      <comments>All source code is under the MIT license.</comments>
+    </license>
+  </licenses>
 
   <distributionManagement>
    <repository>
