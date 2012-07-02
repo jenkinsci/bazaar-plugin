@@ -288,12 +288,42 @@ public class BazaarSCM extends SCM implements Serializable {
         return true;
     }
 
+    /* Run a 'bzr revert' to ensure we have a clean checkout
+       and didn't hit the BZR bug where if you remove and then re-add
+       files/dirs with the same name when there are unknown files in the tree
+       then you get a conflict even with pull --overwrite */
+    private boolean revert(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder();
+
+	args.add(getDescriptor().getBzrExe(), "revert");
+
+        try {
+            if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
+                listener.error("Failed to run bzr revert");
+		try {
+		    listener.getLogger().println("Since BZR itself isn't crash safe, we'll clean the workspace so that on the next try we'll do a clean pull...");
+		    workspace.deleteRecursive();
+		} catch (IOException e) {
+		    e.printStackTrace(listener.error("Failed to clean the workspace"));
+		    return false;
+		}
+                return false;
+            }
+        } catch (IOException e) {
+            listener.error("Failed to run bzr revert");
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * Pull the remote branch into workspace.
      */
     private boolean pull(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         String verb = null;
+	boolean result = true;
         if (isCheckout()) {
             verb = "update";
             args.add(getDescriptor().getBzrExe(),
@@ -317,12 +347,13 @@ public class BazaarSCM extends SCM implements Serializable {
 		}
                 return false;
             }
+	    result= revert(build, launcher, workspace, listener);
         } catch (IOException e) {
             listener.error("Failed to " + verb);
             return false;
         }
 
-        return true;
+        return result;
     }
 
     /**
