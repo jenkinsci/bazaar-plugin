@@ -410,9 +410,14 @@ public class BazaarSCM extends SCM implements Serializable {
 
         String verb = isCheckout() ? "checkout" : "branch";
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(getDescriptor().getBzrExe(),
-                 verb,
-                 source, workspace.getRemote());
+        args.add(getDescriptor().getBzrExe(), verb);
+
+	if (isCheckout()) {
+	    args.add("--lightweight");
+	}
+
+	args.add(source, workspace.getRemote());
+
         try {
             if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).join() != 0) {
                 listener.error("Failed to " + verb + " " + source);
