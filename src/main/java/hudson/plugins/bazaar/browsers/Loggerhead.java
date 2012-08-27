@@ -80,7 +80,7 @@ public class Loggerhead extends BazaarRepositoryBrowser {
 
         @Override
         public String getDisplayName() {
-            return "Loggerhead";
+            return "Loggerhead (used by Launchpad)";
         }
     }
 }
