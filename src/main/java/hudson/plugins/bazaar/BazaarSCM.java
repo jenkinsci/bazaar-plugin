@@ -83,20 +83,20 @@ public class BazaarSCM extends SCM implements Serializable {
      * Source repository URL from which we pull.
      */
     private final String source;
-    private final boolean clean;
+    private final boolean cleantree;
     private final BazaarRepositoryBrowser browser;
     private final boolean checkout;
 
     @DataBoundConstructor
-    public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser, boolean checkout) {
+    public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser, boolean checkout) {
         this.source = source;
-        this.clean = clean;
+        this.cleantree = cleantree;
         this.browser = browser;
         this.checkout = checkout;
     }
 
-    public BazaarSCM(String source, boolean clean, BazaarRepositoryBrowser browser) {
-        this(source, clean, browser, false);
+    public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser) {
+        this(source, cleantree, browser, false);
     }
 
     /**
@@ -112,8 +112,8 @@ public class BazaarSCM extends SCM implements Serializable {
      * True if we want clean check out each time. This means deleting everything in the workspace
      * @return
      */
-    public boolean isClean() {
-        return clean;
+    public boolean isCleanTree() {
+        return cleantree;
     }
 
     /**
@@ -253,7 +253,7 @@ public class BazaarSCM extends SCM implements Serializable {
 
         boolean result = true;
         if (canUpdate) {
-            result = update(clean, build, launcher, workspace, listener, changelogFile);
+            result = update(cleantree, build, launcher, workspace, listener, changelogFile);
         } else {
             result = clone(build, launcher, workspace, listener, changelogFile);
         }
@@ -266,16 +266,17 @@ public class BazaarSCM extends SCM implements Serializable {
     /**
      * Updates the current workspace.
      */
-    private boolean update(boolean clean, AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
+    private boolean update(boolean cleantree, AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws InterruptedException, IOException {
         BazaarRevisionState oldRevisionState = getRevisionState(launcher, listener, workspace.getRemote());
 
         boolean hasProblemOccured = false;
 
-        if (clean) {
-            hasProblemOccured = ! branch(build, launcher, workspace, listener);
-        } else {
-            hasProblemOccured = ! pull(build, launcher, workspace, listener);
+        if (cleantree) {
+            cleantree(build, launcher, workspace, listener);
         }
+
+	hasProblemOccured = ! pull(build, launcher, workspace, listener);
+
         if (hasProblemOccured) {
             return false;
         }
@@ -316,6 +317,34 @@ public class BazaarSCM extends SCM implements Serializable {
 
         return true;
     }
+
+    /* Many software projects aren't very clean when building, and leaving
+       build artifacts around can lead to problems in future builds.
+       Cleaning the workspace is a bit heavy handed as it wipes the .bzr
+       directory, causing us to have to fetch the BZR repository again.
+
+       Instead, we can bzr clean-tree and end up with a very clean tree
+       without having to pull the repository again.
+     */
+    private boolean cleantree(AbstractBuild<?, ?> build, Launcher launcher, FilePath workspace, BuildListener listener) throws InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder();
+
+	args.add(getDescriptor().getBzrExe(), "clean-tree", "--quiet",
+		 "--ignored", "--unknown", "--detritus", "--force");
+
+        try {
+            if (launcher.launch().cmds(args).envs(build.getEnvironment(listener)).stdout(listener.getLogger()).pwd(workspace).join() != 0) {
+                listener.error("Failed to run bzr clean-tree");
+                return false;
+            }
+        } catch (IOException e) {
+            listener.error("Failed to run bzr clean-tree");
+            return false;
+        }
+
+        return true;
+    }
+
 
     /**
      * Pull the remote branch into workspace.

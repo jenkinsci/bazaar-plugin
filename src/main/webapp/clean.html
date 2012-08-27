@@ -1,6 +1,9 @@
 <div>
-    When this option is checked, each build will wipe any local modifications
-    or untracked files in the workspace.
-    This is often a convenient way to ensure that a build is not
-    using any artifacts from earlier builds.
+    When this option is checked, the Bazaar plugin will run:
+  <code>
+  bzr clean-tree --quiet --ignored --unknown --detritus --force
+  </code>
+  to clean up the workspace before pulling the branch. This replaces the option
+  to clean the workspace before a build, as the Bazaar plugin will now
+  automatically wipe the Bazaar repository from a slave if it becomes corrupted.
 </div>
