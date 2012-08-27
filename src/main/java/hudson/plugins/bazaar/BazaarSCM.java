@@ -354,9 +354,29 @@ public class BazaarSCM extends SCM implements Serializable {
         String verb = null;
 	boolean result = true;
         if (isCheckout()) {
-            verb = "update";
-            args.add(getDescriptor().getBzrExe(),
-                     verb,
+	    ArgumentListBuilder update_args = new ArgumentListBuilder();
+            update_args.add(getDescriptor().getBzrExe(), "update");
+	    try {
+		if (launcher.launch().cmds(update_args)
+		    .envs(build.getEnvironment(listener))
+		    .stdout(listener.getLogger()).pwd(workspace).join() != 0) {
+		    listener.error("Failed to bzr update");
+		    try {
+			listener.getLogger().println("Since BZR itself isn't crash safe, we'll clean the workspace so that on the next try we'll do a clean pull...");
+			workspace.deleteRecursive();
+		    } catch (IOException e) {
+			e.printStackTrace(listener.error("Failed to clean the workspace"));
+			return false;
+		    }
+		    return false;
+		}
+	    } catch (IOException e) {
+		listener.error("Failed to bzr update");
+		return false;
+	    }
+
+            verb = "switch";
+            args.add(getDescriptor().getBzrExe(), verb,
                      source);
         } else {
             verb = "pull";
