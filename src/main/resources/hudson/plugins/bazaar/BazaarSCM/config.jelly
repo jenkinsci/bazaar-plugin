@@ -5,10 +5,10 @@
   <t:listScmBrowsers name="bzr.browser" />
   <f:advanced>
     <f:entry title="${%Clean Tree}" help="/plugin/bazaar/clean.html">
-      <f:checkbox name="bzr.cleantree" checked="${instance.cleantree}" />
+      <f:checkbox name="bzr.cleantree" checked="${instance.isCleanTree()}" />
     </f:entry>
     <f:entry title="${%Lightweight Checkout}" help="/plugin/bazaar/checkout.html">
-      <f:checkbox name="bzr.checkout" checked="${instance.checkout}" />
+      <f:checkbox name="bzr.checkout" checked="${instance.isCheckout()}" />
     </f:entry>
   </f:advanced>
 </j:jelly>
