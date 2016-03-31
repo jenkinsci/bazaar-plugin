@@ -86,13 +86,20 @@ public class BazaarSCM extends SCM implements Serializable {
     private final boolean cleantree;
     private final BazaarRepositoryBrowser browser;
     private final boolean checkout;
+    private final String workingDirectory;
 
     @DataBoundConstructor
-    public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser, boolean checkout) {
+    public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser, boolean checkout,
+                     String workingDirectory) {
         this.source = source;
         this.cleantree = cleantree;
         this.browser = browser;
         this.checkout = checkout;
+        this.workingDirectory = workingDirectory;
+    }
+
+    public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser, boolean checkout) {
+        this(source, cleantree, browser, checkout, "");
     }
 
     public BazaarSCM(String source, boolean cleantree, BazaarRepositoryBrowser browser) {
@@ -123,6 +130,26 @@ public class BazaarSCM extends SCM implements Serializable {
     public boolean isCheckout() {
         return checkout;
     }
+
+    /**
+     * Gets the working directory path relative to the workspace.
+     * @return
+     */
+    public String getWorkingDirectory() {
+        return workingDirectory;
+    }
+
+    private FilePath checkoutDir(FilePath workspace) throws IOException, InterruptedException {
+        if (workspace == null) {
+            return null;
+        }
+
+        if (workingDirectory == null || workingDirectory.length() == 0 || workingDirectory.equals(".")) {
+            return workspace;
+        }
+        return workspace.child(workingDirectory);
+    }
+
 
     @Override
     @Exported
@@ -238,14 +265,15 @@ public class BazaarSCM extends SCM implements Serializable {
             InterruptedException {
         PrintStream output = listener.getLogger();
         output.println("Getting local revision...");
-        BazaarRevisionState local = getRevisionState(launcher, listener, build.getWorkspace().getRemote());
+        BazaarRevisionState local = getRevisionState(launcher, listener, checkoutDir(build.getWorkspace()).getRemote());
         output.println(local);
         return local;
     }
 
     @Override
     public boolean checkout(AbstractBuild<?,?> build, Launcher launcher, FilePath workspace, BuildListener listener, File changelogFile) throws IOException, InterruptedException {
-        boolean canUpdate = workspace.act(new FileCallable<Boolean>() {
+        FilePath checkoutDir = checkoutDir(workspace);
+        boolean canUpdate = checkoutDir.act(new FileCallable<Boolean>() {
 
             private static final long serialVersionUID = 1L;
 
@@ -257,9 +285,9 @@ public class BazaarSCM extends SCM implements Serializable {
 
         boolean result = true;
         if (canUpdate) {
-            result = update(cleantree, build, launcher, workspace, listener, changelogFile);
+            result = update(cleantree, build, launcher, checkoutDir, listener, changelogFile);
         } else {
-            result = clone(build, launcher, workspace, listener, changelogFile);
+            result = clone(build, launcher, checkoutDir, listener, changelogFile);
         }
 
         build.addAction(new BazaarTagAction(build));
