@@ -485,7 +485,13 @@ public class BazaarSCM extends SCM implements Serializable {
 
     @Override
     public void buildEnvVars(AbstractBuild<?,?> build, Map<String, String> env) {
-        BazaarRevisionState revisionState = (BazaarRevisionState) build.getAction(SCMRevisionState.class);
+        SCMRevisionState scmRevisionState = build.getAction(SCMRevisionState.class);
+        if (!(scmRevisionState instanceof BazaarRevisionState)) {
+            // MultiSCM hijacks the RevisionState object. Also, with multiple bazaars it becomes increasingly less
+            // meaningful to inject environment variables.
+            return;
+        }
+        BazaarRevisionState revisionState = (BazaarRevisionState) scmRevisionState;
         if (revisionState != null) {
           if (revisionState.getRevNo() != null) {
             env.put("BZR_REVISION", revisionState.getRevNo());
