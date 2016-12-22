@@ -240,14 +240,14 @@ public class BazaarSCM extends SCM implements Serializable {
         final Change change;
         output.printf("Baseline is %s.\n", baseline);
         if (remote == null) {
-	    output.printf("Failed to get current remote revision, assuming no change.\n");
-	    change = Change.NONE;
-	}
-	else if ((baseline == SCMRevisionState.NONE)
-            // appears that other instances of None occur - its not a singleton.
-            // so do a (fugly) class check.
-            || (baseline.getClass() != BazaarRevisionState.class)
-            || (!remote.equals(baseline)))
+            output.printf("Failed to get current remote revision, assuming no change.\n");
+            change = Change.NONE;
+        }
+        else if ((baseline == SCMRevisionState.NONE)
+                // appears that other instances of None occur - its not a singleton.
+                // so do a (fugly) class check.
+                || (baseline.getClass() != BazaarRevisionState.class)
+                || (!remote.equals(baseline)))
             change = Change.SIGNIFICANT;
         else
             change = Change.NONE;
