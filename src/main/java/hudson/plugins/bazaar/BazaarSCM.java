@@ -243,6 +243,8 @@ public class BazaarSCM extends SCM implements Serializable {
             output.printf("Failed to get current remote revision, assuming no change.\n");
             change = Change.NONE;
         } else if ((baseline == SCMRevisionState.NONE)
+                // If we can't qualify the base revision (i.e. previous run) always default to change.
+                || (baseline == null)
                 // appears that other instances of None occur - its not a singleton.
                 // so do a (fugly) class check.
                 || (baseline.getClass() != BazaarRevisionState.class)
