@@ -27,6 +27,7 @@
 
 package hudson.plugins.bazaar;
 
+import com.google.common.base.Joiner;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -59,6 +60,9 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -157,7 +161,17 @@ public class BazaarSCM extends SCM implements Serializable {
         return browser;
     }
 
+    private BazaarRevisionState getLocalRevisionState(Launcher launcher, TaskListener listener, String root)
+            throws InterruptedException {
+        return getRevisionState(launcher, listener, root, true);
+    }
+
     private BazaarRevisionState getRevisionState(Launcher launcher, TaskListener listener, String root)
+            throws InterruptedException {
+        return getRevisionState(launcher, listener, root, false);
+    }
+
+    private BazaarRevisionState getRevisionState(Launcher launcher, TaskListener listener, String root, boolean localRoot)
             throws InterruptedException {
         BazaarRevisionState rev = null;
         try {
@@ -173,14 +187,20 @@ public class BazaarSCM extends SCM implements Serializable {
             final String bzr_cmd = getDescriptor().getBzrExe();
             ProcStarter starter = launcher.launch();
 
-            starter = starter.cmds(bzr_cmd, "revision-info", "-d", root);
+            List<String> cmds = new ArrayList<String>();
+            cmds.addAll(Arrays.asList(bzr_cmd, "revision-info", "-d", root));
+            if (localRoot) {
+                cmds.add("--tree");
+            }
+
+            starter = starter.cmds(cmds);
             // The launcher should already have the right vars!
             // starter = starter.envs(EnvVars.masterEnvVars);
             starter = starter.stdout(stdout);
             starter = starter.stderr(stderr);
             // not needed without workspaces : -d starter = starter.pwd(workspace);
             final int ret = starter.join();
-            final String info_output = "bzr revision-info -d " + root + " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
+            final String info_output = Joiner.on(" ").join(cmds)+ " returned " + ret + ". Command output: \"" + stdout.toString() + "\" stderr: \"" + stderr.toString() + "\"";
             if (ret != 0) {
                 logger.warning(info_output);
             } else {
@@ -267,7 +287,7 @@ public class BazaarSCM extends SCM implements Serializable {
             InterruptedException {
         PrintStream output = listener.getLogger();
         output.println("Getting local revision...");
-        BazaarRevisionState local = getRevisionState(launcher, listener, checkoutDir(build.getWorkspace()).getRemote());
+        BazaarRevisionState local = getLocalRevisionState(launcher, listener, checkoutDir(build.getWorkspace()).getRemote());
         output.println(local);
         return local;
     }
